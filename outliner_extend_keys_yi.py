@@ -25,10 +25,10 @@ bl_info = {
     'name' : "Extend Keys",
     'description' : "outliner extend keys",
     'author' : "Yi Danyang",
-    'version' : ( 0, 0, 2 ),
-    'blender' : ( 2, 6, 8, 2 ),
-    'api' : 58979,
-    'location' : 'Hotkey: up/down + [shift]; shift + LMB; shift v/s/r',
+    'version' : ( 0, 0, 3 ),
+    'blender' : ( 2, 6, 9, 1 ),
+    'api' : 61076,
+    'location' : '[Outliner]Hotkey: up/down + [shift]; (alt + wheel up/down) + [shift]; shift + (double)LMB; shift v/s/r',
     'warning' : "Alpha",
     'category' : 'Outliner',
     "wiki_url" : "https://github.com/nirenyang/Blender_Addon_-_Outliner_Extend_Keys",
@@ -145,20 +145,25 @@ def unregisterObjectQueueSelect():
 ##
 
 ##
-## Arrow Select Begin
+## Arrow and Wheel Select Begin
 ##
 enum_arrow = [( 'UP_ARROW', 'UP', 'up' ),
-              ( 'DOWN_ARROW', 'DOWN', 'down' ),]
+              ( 'DOWN_ARROW', 'DOWN', 'down' ),
+              ( 'None', 'None', 'None' ),]
               # ( 'LEFT_ARROW', 'LEFT', 'left' ),
               # ( 'RIGHT_ARROW', 'RIGHT', 'right' ),]
-class ObjectArrowSelect(bpy.types.Operator):
-    """ObjectArrowSelect"""
-    bl_idname = "object.arrow_select"
-    bl_label = "Object Arrow Select"
+enum_wheel = [( 'WHEELINMOUSE', 'UP', 'up' ),
+              ( 'WHEELOUTMOUSE', 'DOWN', 'down' ),
+              ( 'None', 'None', 'None' ),]
+class ObjectArrowAndWheelSelect(bpy.types.Operator):
+    """ObjectArrowAndWheelSelect"""
+    bl_idname = "object.arrow_and_wheel_select"
+    bl_label = "Object Arrow and Wheel Select "
     bl_options = {'REGISTER', 'UNDO'}
     
+    shiftOn     = bpy.props.BoolProperty(name='shift', description='Shift Bool')
     input_arrow = bpy.props.EnumProperty(name='arrows', description='Arrow Types', items=enum_arrow)
-    shiftOn     = bpy.props.BoolProperty( name='shift', description='Shift Bool')
+    input_wheel = bpy.props.EnumProperty(name='wheels', description='Wheel Types', items=enum_wheel)
     
     @classmethod
     def poll(cls, context):
@@ -186,59 +191,81 @@ class ObjectArrowSelect(bpy.types.Operator):
                     next_id = 0
                 else:
                     curr_id = sorted_names.index(context.active_object.name)
-                    if self.input_arrow == 'UP_ARROW':
+                    if self.input_arrow == 'UP_ARROW' or self.input_wheel == 'WHEELINMOUSE':
                         if curr_id == 0:
                             next_id = len(sorted_names)-1
                         else:
                             next_id = curr_id-1
-                    elif self.input_arrow == 'DOWN_ARROW':
+                    elif self.input_arrow == 'DOWN_ARROW' or self.input_wheel == 'WHEELOUTMOUSE':
                         if curr_id == len(sorted_names)-1:
                             next_id = 0
                         else:
                             next_id = curr_id+1
+                        
                 context.scene.objects.active = context.scene.objects[sorted_names[next_id]]
                 context.active_object.select = True
             break
         return {'FINISHED'}
         
-def registerObjectArrowSelect():
+def registerObjectArrowAndWheelSelect():
     kc = bpy.context.window_manager.keyconfigs.default.keymaps['Outliner']
     if kc:
         for i in enum_arrow:
-            kmi = kc.keymap_items.new('object.arrow_select', i[0], 'PRESS', shift = True)
-            kmi.properties.input_arrow = i[0]
-            kmi.properties.shiftOn = True
-            kmi = kc.keymap_items.new('object.arrow_select', i[0], 'PRESS', shift = False)
-            kmi.properties.input_arrow = i[0]
-            kmi.properties.shiftOn = False
+            if not i[0] == 'None':
+                #arrow
+                kmi = kc.keymap_items.new('object.arrow_and_wheel_select', i[0], 'PRESS', shift = True)
+                kmi.properties.input_arrow = i[0]
+                kmi.properties.input_wheel = 'None'
+                kmi.properties.shiftOn = True
+                kmi = kc.keymap_items.new('object.arrow_and_wheel_select', i[0], 'PRESS', shift = False)
+                kmi.properties.input_arrow = i[0]
+                kmi.properties.input_wheel = 'None'
+                kmi.properties.shiftOn = False
+        for i in enum_wheel:
+            if not i[0] == 'None':
+                #wheel
+                kmi = kc.keymap_items.new('object.arrow_and_wheel_select', i[0], 'PRESS', shift = True, alt = True)
+                kmi.properties.input_arrow = 'None'
+                kmi.properties.input_wheel = i[0]
+                kmi.properties.shiftOn = True
+                kmi = kc.keymap_items.new('object.arrow_and_wheel_select', i[0], 'PRESS', shift = False, alt = True)
+                kmi.properties.input_arrow = 'None'
+                kmi.properties.input_wheel = i[0]
+                kmi.properties.shiftOn = False
             
-def unregisterObjectArrowSelect():
+def unregisterObjectArrowAndWheelSelect():
     kc = bpy.context.window_manager.keyconfigs.default.keymaps['Outliner']
     if kc:
         for i in enum_arrow:
-            if i[0] in kc.keymap_items.keys():
-                kc.keymap_items.remove( kc.keymap_items[i[0]] )
-                kc.keymap_items.remove( kc.keymap_items[i[0]] )
+            if not i[0] == 'None':
+                if i[0] in kc.keymap_items.keys():
+                    kc.keymap_items.remove( kc.keymap_items[i[0]] )
+                    kc.keymap_items.remove( kc.keymap_items[i[0]] )
+        for i in enum_wheel:
+            if not i[0] == 'None':
+                if i[0] in kc.keymap_items.keys():
+                    kc.keymap_items.remove( kc.keymap_items[i[0]] )
+                    kc.keymap_items.remove( kc.keymap_items[i[0]] )    
 ##
-## Arrow Select End
+## Arrow and Wheel Select End
 ##
 
 
 def register():
     bpy.utils.register_class(ObjectSetVSR)
     bpy.utils.register_class(ObjectQueueSelect)
-    bpy.utils.register_class(ObjectArrowSelect)
+    bpy.utils.register_class(ObjectArrowAndWheelSelect)
     registerObjectSetVSR()
     registerObjectQueueSelect()
-    registerObjectArrowSelect()
+    registerObjectArrowAndWheelSelect()
 
 def unregister():
     bpy.utils.unregister_class(ObjectSetVSR)
     bpy.utils.unregister_class(ObjectQueueSelect)
-    bpy.utils.unregister_class(ObjectArrowSelect)
+    bpy.utils.unregister_class(ObjectArrowAndWheelSelect)
     unregisterObjectSetVSR()
     unregisterObjectQueueSelect()
-    unregisterObjectArrowSelect()
+    unregisterObjectArrowAndWheelSelect()
 
 
 if __name__ == "__main__":
