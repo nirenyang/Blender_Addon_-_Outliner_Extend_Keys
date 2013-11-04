@@ -22,8 +22,8 @@ import bpy
 
 
 bl_info = {
-    'name' : "Extend Keys",
-    'description' : "outliner extend keys",
+    'name' : "Outliner Extend Keys",
+    'description' : "Outliner Extend Keys",
     'author' : "Yi Danyang",
     'version' : ( 0, 0, 3 ),
     'blender' : ( 2, 6, 9, 1 ),
